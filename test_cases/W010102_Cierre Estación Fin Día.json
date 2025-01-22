@@ -1,0 +1,22 @@
+{
+  "Titulo": "W010102_Cierre Estación Fin Día",
+  "Modulo": "02 - Cierre",
+  "CasoPrueba": {
+    "1": {
+      "paso": "Capturar en el campo Clave el numero 0004 (Cierre de estacion) y dar \"Enter\"",
+      "validacion": "?Se muestra la pantalla \"VENTANILLA\" con el encabezado:\n\"CIERRE DE ESTACIÓN FIN DE DÍA\""
+    },
+    "2": {
+      "paso": "Hacer clic en el boton \"Aceptar\"",
+      "validacion": "?Se despliega la ventana \"Conteste la Pregunta\" con el mensaje:\n\"Esta Transaccion Terminará la operacion y solo operará hasta el dia siguiente…\" ¿Desea Continuar?"
+    },
+    "3": {
+      "paso": "Hacer clic en el boton \"Aceptar\"",
+      "validacion": "?Se despliega la ventana \"Proceso Exitoso\" con el mensaje:\n\"La Transaccion Termino Satisfactoriamente\""
+    },
+    "4": {
+      "paso": "Hacer clic en el boton \"Aceptar\"",
+      "validacion": "?Se muestra la pantalla principal \"INICIO\" de SIWEB CAJA"
+    }
+  }
+}

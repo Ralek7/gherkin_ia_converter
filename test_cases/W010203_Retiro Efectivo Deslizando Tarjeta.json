@@ -1,0 +1,38 @@
+{
+  "Titulo": "W010203_Retiro Efectivo Deslizando Tarjeta",
+  "Modulo": "03 - Retiro",
+  "CasoPrueba": {
+    "1": {
+      "paso": "Capturar en el campo Clave el numero 0223 (Retiro en Efectivo) y dar \"Enter\"",
+      "validacion": "?Se despliega la ventana \"Conteste la Pregunta\" con el mensaje: \n\"Captura con Tarjeta...?\""
+    },
+    "2": {
+      "paso": "Hacer clic en el boton \"Si\"",
+      "validacion": "?Se despliega la ventana \"Conteste la Pregunta\" con el mensaje: \n\"Deslizará la Tarjeta...?\""
+    },
+    "3": {
+      "paso": "Hacer clic en el boton \"Si\"",
+      "validacion": "?Se despliega la ventana \"Lectura de Tarjeta\" con el mensaje:\n\"Deslice la Tarjeta por el Lector por favor…\""
+    },
+    "4": {
+      "paso": "Deslizar una tarjeta valida: **<numero_tarjeta>**",
+      "validacion": "?Se muestra la pantalla principal \"RETIRO EN EFECTIVO\" con los campos:\nNumero de Tarjeta con los datos ya capturados deshabilitado\nImporte habilitado\nEfectivo a Pagar deshabilitado"
+    },
+    "5": {
+      "paso": "Capturar los siguientes datos:\nImporte **<importe>**, y dar \"Enter\"\nEfectivo a Pagar **<efectivo>**, y dar \"Enter\"\nHacer clic en el boton \"Aceptar\"",
+      "validacion": "?Se despliega la ventana de captura de huella dactilar con el campo Num. Cliente y el mensaje: \n\"Coloque el dedo en el sensor\""
+    },
+    "6": {
+      "paso": "Capturar la huella dactilar del cliente cuando se ilumine el sensor\nHacer clic en el boton \"Aceptar\"",
+      "validacion": "?Se muestra la pantalla \"Desglose de MONEDA NACIONAL\" con la seccion Egreso habilitada"
+    },
+    "7": {
+      "paso": "Capturar el registro total de efectivo que saldrá de la caja:\n1000:  **<billete1000> **, y dar \"Enter\"\n  500:  **<billete500> **, y dar \"Enter\"\n  200:  **<billete200> **, y dar \"Enter\"\n  100:  **<billete100> **, y dar \"Enter\"\n    50:  **<billete50> **, y dar \"Enter\"\n    20:  **<billete20> **, y dar \"Enter\"\n    MX: **<morralla> **. y dar \"Enter\"\nHacer clic en el boton \"Aceptar\"",
+      "validacion": "?Se despliega la ventana con el mensaje \"Imprimiendo ticket, por favor espere\", posteriormente la ventana \"Proceso Exitoso\" con el mensaje:\n\"La Transaccion Termino Satisfactoriamente\""
+    },
+    "8": {
+      "paso": "Hacer clic en el boton \"Aceptar\"",
+      "validacion": "?El sistema regresa a la pantalla inicial \"VENTANILLA\" con el campo Clave habilitado"
+    }
+  }
+}

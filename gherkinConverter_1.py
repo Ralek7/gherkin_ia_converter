@@ -1,7 +1,8 @@
 import json
 import os
+import re
 from typing import List, Dict, Any
-from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
+from transformers import pipeline, AutoTokenizer
 import torch
 import warnings
 warnings.filterwarnings('ignore')
@@ -34,30 +35,29 @@ class SmartGherkinConverter:
         )
         print("Modelo cargado exitosamente")
 
-    def _analyze_step_type(self, text: str) -> str:
+    def _extract_flow_name(self, text: str) -> str:
         """
-        Analiza el texto del paso para determinar el tipo de paso Gherkin más apropiado.
+        Extrae el nombre del flujo del texto del primer paso.
         """
-        text_lower = text.lower()
+        # Buscar texto entre paréntesis
+        parentesis_match = re.search(r'\((.*?)\)', text)
+        if parentesis_match:
+            return parentesis_match.group(1)
         
-        # Analizar el contexto para determinar el tipo de paso
-        if any(word in text_lower for word in ['mostrar', 'muestra', 'despliega', 'visualiza', '?se muestra']):
-            return 'Then'
-        elif any(word in text_lower for word in ['capturar', 'ingresar', 'escribir']):
-            return 'When'
-        elif any(word in text_lower for word in ['hacer clic', 'seleccionar', 'presionar']):
-            return 'When'
-        elif any(word in text_lower for word in ['verificar', 'validar', 'comprobar']):
-            return 'Then'
-        elif text_lower.startswith('?'):
-            return 'Then'
-        else:
-            return 'When'
+        # Buscar texto después de números y espacios
+        numero_match = re.search(r'\d+\s+(.*?)(?:\(|$)', text)
+        if numero_match:
+            return numero_match.group(1).strip()
+        
+        return None
 
     def _format_step_content(self, text: str) -> str:
         """
         Formatea el contenido del paso, limpiando y truncando en saltos de línea.
         """
+        if not text:
+            return None
+            
         # Remover el signo de interrogación al inicio si existe
         if text.startswith('?'):
             text = text[1:]
@@ -65,11 +65,7 @@ class SmartGherkinConverter:
         # Eliminar comillas
         text = text.replace('"', '')
         
-        # Tomar solo el texto hasta el primer salto de línea
-        text = text.split('\n')[0]
-        text = text.split('\\n')[0]
-        
-        # Lista de frases a eliminar (deben terminar en dos puntos)
+        # Lista de frases a eliminar
         frases_a_eliminar = [
             "con los campos:",
             "que devuelve:",
@@ -88,9 +84,18 @@ class SmartGherkinConverter:
             
         return text.strip()
 
+    def _extract_clave_number(self, text: str) -> str:
+        """
+        Extrae el número de clave del texto.
+        """
+        match = re.search(r'Clave el numero (\d+)', text)
+        if match:
+            return match.group(1)
+        return None
+
     def _create_prompt(self, module: str, title: str, steps: List[Dict[str, Any]]) -> str:
         """
-        Crea el prompt para el modelo de IA con mejor análisis de pasos.
+        Crea el prompt para el modelo de IA con mejor análisis de pasos y AND statements.
         """
         feature_content = []
         feature_content.append(f"Feature: {module}")
@@ -100,29 +105,104 @@ class SmartGherkinConverter:
         # Ordenar los pasos por número
         sorted_steps = sorted(steps, key=lambda x: int(x['step_number']))
         
-        current_type = None
-        for step in sorted_steps:
-            # Procesar paso principal
-            paso = step['paso'].strip()
-            if paso:
-                formatted_content = self._format_step_content(paso)
-                if formatted_content:
-                    step_type = self._analyze_step_type(paso)
-                    if step_type == current_type:
-                        step_type = 'And'
-                    current_type = step_type
-                    feature_content.append(f"    {step_type} {formatted_content}")
-            
-            # Procesar validación
-            validacion = step['validacion'].strip()
-            if validacion:
-                formatted_content = self._format_step_content(validacion)
-                if formatted_content:
-                    step_type = self._analyze_step_type(validacion)
-                    if step_type == current_type:
-                        step_type = 'And'
-                    current_type = step_type
-                    feature_content.append(f"    {step_type} {formatted_content}")
+        # Extraer información del primer paso
+        first_step = sorted_steps[0]['paso']
+        last_step = sorted_steps[-1]['validacion'] if sorted_steps[-1]['validacion'] else sorted_steps[-1]['paso']
+        
+        # Formatear los pasos principales
+        first_step_formatted = self._format_step_content(first_step)
+        last_step_formatted = self._format_step_content(last_step)
+        
+        # Extraer número de clave y nombre del flujo
+        clave_number = self._extract_clave_number(first_step_formatted)
+        flow_name = self._extract_flow_name(first_step_formatted)
+        
+        # Generar Given
+        if clave_number:
+            feature_content.append(f"    Given Capturar en el campo Clave el numero {clave_number}")
+        
+        # Nuevas validaciones para AND statements
+        beneficiary_patterns = [
+            r"(?:Ingresa|Ingresar) (?:el )?(?:primer )?nombre del Cliente",
+            r"(?:Ingresa|Ingresar) (?:el )?apellido paterno",
+            r"(?:Ingresa|Ingresar) (?:el )?apellido materno"
+        ]
+        
+        card_swipe_patterns = [
+            r"[Dd]eslizar? (?:una )?tarjeta",
+            r"[Dd]esliza (?:una )?tarjeta"
+        ]
+        
+        # Patrones actualizados para cuenta y tarjeta
+        account_patterns = [
+            r"Capturar los siguientes datos:\s*\n?N[úu]mero de Cuenta \*\*<numero_cuenta>\*\*",
+            r"Capturar los siguientes datos:\s*\n?N[úu]mero de Tarjeta \*\*<numero_tarjeta>\*\*",
+            # Variaciones adicionales por si el formato varía ligeramente
+            r"Capturar los siguientes datos:.*N[úu]mero de Cuenta.*\*\*.*\*\*",
+            r"Capturar los siguientes datos:.*N[úu]mero de Tarjeta.*\*\*.*\*\*"
+        ]
+        
+        # Patrones para detectar el desglose de efectivo
+        desglose_patterns = [
+            r"Capturar el registro total de efectivo que ingresa a la caja:",
+            r"Capturar el registro total de efectivo que saldrá de la caja:",
+            r"Capturar el registro total de efectivo que (?:ingresa|sale) (?:a|de) la caja:",
+            r"Capturar el registro total de efectivo:",
+            r"Capturar el desglose de efectivo:",
+        ]
+        
+        # Verificar patrones en todos los pasos
+        has_beneficiary = any(
+            any(re.search(pattern, self._format_step_content(step['paso']) or '') 
+                for pattern in beneficiary_patterns)
+            for step in sorted_steps
+        )
+        
+        has_card_swipe = any(
+            any(re.search(pattern, self._format_step_content(step['paso']) or '')
+                for pattern in card_swipe_patterns)
+            for step in sorted_steps
+        )
+        
+        # Modificada la verificación para account_patterns
+        has_account = any(
+            any(re.search(pattern, step['paso'] or '', re.DOTALL)  # Agregado re.DOTALL para manejar \n
+                for pattern in account_patterns)
+            for step in sorted_steps
+        )
+        
+        # Verificación modificada para desglose usando el texto sin procesar
+        has_desglose = any(
+            any(re.search(pattern, step.get('paso', '') or '', re.IGNORECASE)
+                for pattern in desglose_patterns)
+            for step in sorted_steps
+        )
+        
+        # Agregar AND statements antes del When
+        if has_beneficiary:
+            feature_content.append("    And ingresar datos correspondientes del beneficiario")
+        
+        if has_card_swipe:
+            feature_content.append("    And deslizar tarjeta")
+        
+        if has_account:
+            feature_content.append("    And ingresar numero de cuenta/tarjeta")
+        
+        # Generar When
+        if flow_name:
+            feature_content.append(f"    When realizar flujo de: {flow_name}")
+        
+        # Agregar AND statement después del When
+        if has_desglose:
+            feature_content.append("    And ingresar desglose efectivo")
+        
+        # Generar Then
+        if last_step_formatted:
+            last_step_clean = last_step_formatted
+            if "se muestra" in last_step_clean.lower() or "se despliega" in last_step_clean.lower():
+                feature_content.append(f"    Then {last_step_clean}")
+            else:
+                feature_content.append(f"    Then {flow_name} finalizado exitosamente")
         
         return "\n".join(feature_content)
 
@@ -171,7 +251,7 @@ class SmartGherkinConverter:
                     )
                     
                     # Crear nombre del archivo feature reemplazando espacios por _
-                    feature_filename = os.path.splitext(filename)[0].replace(' ', '_') + '.feature'
+                    feature_filename = os.path.splitext(filename)[0].replace(' ', '_')+'_v1' + '.feature'
                     output_file = os.path.join(self.output_dir, feature_filename)
                     
                     with open(output_file, "w", encoding="utf-8") as f:
@@ -182,7 +262,7 @@ class SmartGherkinConverter:
                 except Exception as e:
                     print(f"Error procesando el archivo {filename}: {str(e)}")
                     continue
-                
+
 
 if __name__ == "__main__":
     converter = SmartGherkinConverter(
@@ -190,3 +270,5 @@ if __name__ == "__main__":
         "features"     # Directorio de salida
     )
     converter.convert()
+
+

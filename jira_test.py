@@ -4,7 +4,7 @@ from base64 import b64encode
 # Configuración
 jira_url = "https://coppelmx.atlassian.net"
 email = "jasanchezs@bancoppel.com"
-api_token = "ATATT3xFfGF0Ui4tAtOqUCCxidCX9OLaUVWibusNHzBar5RN_8DHJo6RpSCkKuygw5DzytdWBf4UvikSmtT4JCXEZktUcs0WSmCBdR6U05X5WKYQaS3REIyDSgs6EtenQSME_8hSDRf3mhN30YBx7OW4HxN2XbpCraMIUmJVN_HOpD2LHQt-uHw=FF348170"  # ¡Pega el nuevo token generado!
+api_token = "ATATT3xFfGF0r7Ymbhc7NoGBUmzaw5mm9v_oTpAzdx47fRpWdq2IN4-a4G4pUcdUNh4uavmmibZx4zyQ1ZKmKyLmQiUy6FbH_tok6ZbBs_k3G7vZ15fF5RpURZ1qrta0-1f_mmIBvGNbgUTN37wAS95aoZS8g-bEl8zgyREoNYnzvp6xSN38xl8=CE16FD39" 
 
 # Generar encabezado de autenticación
 credentials = f"{email}:{api_token}"

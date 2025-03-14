@@ -26,7 +26,7 @@ class UltimateGherkinConverter:
     def _create_action_summary(self, steps: list) -> list:
         """Resumen ejecutivo para automatización"""
         action_map = {
-            r'clic|seleccionar|presionar': 'Interactuar con elemento',
+            r'clic|seleccionar|presionar': 'Interactuar con elemento(s)',
             r'capturar|ingresar': 'Capturar datos requeridos',
             r'validar|verificar': 'Validar información del sistema',
             r'habilitar|desplegar': 'Habilitar sección del formulario'

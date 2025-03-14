@@ -57,28 +57,28 @@ class JiraExtractor:
             self.logger.error(f"Error de conexión: {str(e)}")
             return False
 
-    # def get_user_permissions(self) -> Dict:
-    #     """Obtener permisos del usuario autenticado"""
-    #     try:
-    #         permissions_url = f"{self.url}/rest/api/3/mypermissions"
-    #         headers = {"Authorization": self.auth_header}
-    #         params = {"permissions": "BROWSE_PROJECTS,VIEW_ISSUES"}  # Permisos específicos
+    def get_user_permissions(self) -> Dict:
+        """Obtener permisos del usuario autenticado"""
+        try:
+            permissions_url = f"{self.url}/rest/api/3/mypermissions"
+            headers = {"Authorization": self.auth_header}
+            params = {"permissions": "BROWSE_PROJECTS,VIEW_ISSUES"}  # Permisos específicos
             
-    #         response = self.session.get(
-    #             permissions_url,
-    #             headers=headers,
-    #             params=params
-    #         )
+            response = self.session.get(
+                permissions_url,
+                headers=headers,
+                params=params
+            )
             
-    #         if response.status_code == 200:
-    #             return response.json()
+            if response.status_code == 200:
+                return response.json()
             
-    #         self.logger.error(f"Error al obtener permisos: {response.text}")
-    #         return {}
+            self.logger.error(f"Error al obtener permisos: {response.text}")
+            return {}
 
-    #     except Exception as e:
-    #         self.logger.error(f"Error: {str(e)}")
-    #         return {}
+        except Exception as e:
+            self.logger.error(f"Error: {str(e)}")
+            return {}
 
     def get_issue(self, issue_id: str) -> Optional[Dict]:
         """Obtener un issue específico"""
@@ -172,26 +172,21 @@ def main():
             print("\n❌ Error de autenticación. Verifica token y credenciales")
             return
 
-        # # Mostrar permisos
-        # permissions = extractor.get_user_permissions()
-        # if permissions:
-        #     print("\n=== Permisos detectados ===")
-        #     for key, value in permissions.get("permissions", {}).items():
-        #         print(f"- {key}: {value.get('havePermission', False)}")
-        # else:
-        #     print("\n⚠ No se pudieron obtener los permisos")
+        # Pedir clave del proyecto primero
+        project_key = input("\nClave del proyecto (ej: BT115): ").strip()
 
         # Menú interactivo
         print("\n=== Jira Extractor ===")
         option = input(
             "Selecciona una opción:\n"
-            "1. Extraer issue específico\n"
-            "2. Extraer todos los issues de un proyecto\n"
+            "1. Extraer un issue específico de este proyecto\n"
+            "2. Extraer todos los issues del proyecto\n"
             "Opción: "
         )
 
         if option == "1":
-            issue_id = input("ID del issue (ej: BT115-123): ").strip()
+            issue_number = input("Número del issue (ej: 123): ").strip()
+            issue_id = f"{project_key}-{issue_number}"
             if issue := extractor.get_issue(issue_id):
                 extractor.save_issue(issue)
                 print(f"\n✅ Issue {issue_id} guardado exitosamente!")
@@ -199,7 +194,6 @@ def main():
                 print("\n❌ No se pudo obtener el issue")
 
         elif option == "2":
-            project_key = input("Clave del proyecto (ej: BT115): ").strip()
             if issues := extractor.get_all_issues(project_key):
                 print(f"\n🔍 Encontrados {len(issues)} issues en {project_key}")
                 for issue_id in issues:
